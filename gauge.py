@@ -10,12 +10,12 @@ import sys
 import os
 from homeassistant_api import Client,State
 
-FRAMERATE=32
-TICK_THRESH=52
+FRAMERATE=16
+TICK_THRESH=50
 SLICEX = 140
 
 level_avg_win = []
-AVG_POINTS = 50.0
+AVG_POINTS = 10.0
 
 api_url = "http://homeassistant.local:8123/api"
 token = None
@@ -26,6 +26,7 @@ with open("token.hass", "r") as f:
     token = f.read().strip()
 
 assert token is not None
+
 
 
 def contour_area(contours):
@@ -44,13 +45,13 @@ def interpolate(tick_contours, indicator_contours, image):
     image_w = image.shape[1]
     legend_w = 75
 
-    if len(tick_contours) < 6 or len(indicator_contours) < 2:
+    if len(tick_contours) < 5 or len(indicator_contours) < 1:
         return [None, image]
     
     tick_cnt_area = contour_area(tick_contours)
     for i in range(0, len(tick_contours), 1):
         tick_contour = tick_contours[i]
-        if (cv2.contourArea(tick_contour) > tick_cnt_area[5]):
+        if (cv2.contourArea(tick_contour) >= tick_cnt_area[4]):
             x,y,w,h = cv2.boundingRect(tick_contour)
             tick_yval = y + h//2
             tick_yvals.append(tick_yval)
@@ -58,7 +59,7 @@ def interpolate(tick_contours, indicator_contours, image):
     ind_cnt_area = contour_area(indicator_contours)
     for i in range(0, len(indicator_contours), 1):
         indicator_contour = indicator_contours[i]
-        if (cv2.contourArea(indicator_contour) > ind_cnt_area[1]):
+        if (cv2.contourArea(indicator_contour) >= ind_cnt_area[0]):
             x,y,w,h = cv2.boundingRect(indicator_contour)
             indicator_yval = y + h//2
 
@@ -138,6 +139,7 @@ with Client(api_url, token) as client:
 
         # crop and rotate the image 180 degrees
         image = frame.array[0:549,300:500]
+
         image = cv2.rotate(image, 1, cv2.ROTATE_180)
         
         # crop a slice to find the indicators
