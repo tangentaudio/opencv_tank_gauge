@@ -1,32 +1,32 @@
+#!/usr/bin/python3
+
 from picamera import PiCamera
 from picamera.array import PiRGBArray
 from datetime import datetime
 import time
 import cv2
 import numpy as np
+import sys
 import os
 from homeassistant_api import Client,State
 
-SHOW=False
+FRAMERATE=32
 TICK_THRESH=52
 SLICEX = 140
 
-
 level_avg_win = []
 AVG_POINTS = 50.0
-last_avg = 0.0
 
 api_url = "http://homeassistant.local:8123/api"
 token = None
+
+os.chdir(os.path.dirname(sys.argv[0]))
+
 with open("token.hass", "r") as f:
     token = f.read().strip()
 
 assert token is not None
 
-
-
-def nothing(x):
-    pass
 
 def contour_area(contours):
     cnt_area = []
@@ -34,24 +34,6 @@ def contour_area(contours):
         cnt_area.append(cv2.contourArea(contours[i]))
     list.sort(cnt_area, reverse=True)
     return cnt_area
-
-def draw_bounding_box(contours, image, number_of_boxes=1, color=(0,0,255)):
-    cnt_area = contour_area(contours)
-    for i in range(0,len(contours),1):
-        cnt = contours[i]
-        if (cv2.contourArea(cnt) > cnt_area[number_of_boxes]):
-            x,y,w,h = cv2.boundingRect(cnt)
-
-            dim = image.shape
-            width = image.shape[1]
-
-            ypos = y + h//2
-            image=cv2.rectangle(image,(0,ypos),(width,ypos),color,2)
-
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            image=cv2.putText(image, str(ypos), (0,ypos-4), font, 1, color, 2, cv2.LINE_AA) 
-
-    return image
 
 def interpolate(tick_contours, indicator_contours, image):
     tick_fp = [100.0,75.0,50.0,25.0,0.0]
@@ -94,7 +76,6 @@ def interpolate(tick_contours, indicator_contours, image):
 
             image=cv2.putText(image, "{:.0f}%".format(fpval), (0,yval-4), font, 0.7, (0,255,0), 2, cv2.LINE_AA) 
 
-            
         image=cv2.rectangle(image,(legend_w,0),(legend_w,image_h),(0,255,0),2)
 
         level = np.interp([indicator_yval], tick_yvals, tick_fp)[0]
@@ -106,8 +87,6 @@ def interpolate(tick_contours, indicator_contours, image):
         dt_string = now.strftime("%m/%d/%Y %H:%M:%S")        
         image=cv2.putText(image, dt_string, (0, image_h - 5), font, 0.5, (255,255,255), 2, cv2.LINE_AA) 
 
-      
-        
         return [level, image]
 
 
@@ -120,10 +99,8 @@ def rotate_image(image, angle):
   return result
 
 
-
 def update_level(client, level):
     global level_avg_win
-    global last_avg
     
     if len(level_avg_win) < AVG_POINTS:
         level_avg_win.append(level)
@@ -138,15 +115,12 @@ def update_level(client, level):
 
         level_avg_win = []
 
-        avg_r = float("{:.1f}".format(avg))
-        lavg_r = float("{:1f}".format(last_avg))
+        print("New average level is {:.1f}".format(avg))
 
-        if avg_r != lavg_r:
-            print("New average level is {:.1f}".format(avg))
-            new_state = client.set_state (State(state="{:.1f}".format(avg), entity_id='sensor.oil_tank_level'))
-            last_avg = avg
+        new_state = client.set_state (State(state="{:.1f}".format(avg), entity_id='sensor.oil_tank_level'))
 
-            return True
+        return True
+
     return False
 
 
@@ -156,10 +130,9 @@ with Client(api_url, token) as client:
 
     camera = PiCamera()
     camera.resolution = (800,608)
-    camera.framerate = 8
+    camera.framerate = FRAMERATE
 
     raw_capture = PiRGBArray(camera)
-
 
     for frame in camera.capture_continuous(raw_capture, format="bgr", use_video_port=True):
 
@@ -193,18 +166,15 @@ with Client(api_url, token) as client:
         # find contours for the indicator
         ind_contours, ind_hierarchy = cv2.findContours(image=ind_thresh, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_SIMPLE)
 
-
         level, gauge = interpolate(tick_contours, ind_contours, image)
 
         if level is not None:
             if update_level(client, level):
                 cv2.imwrite("/var/www/html/gauge.png", gauge)
-        if SHOW:
-            # show final image
-            cv2.imshow('Gauge', gauge)
+                break
 
-
-        key = cv2.waitKey(1) & 0xFF
         raw_capture.truncate(0)
-        if key == ord("q"):
-            break
+
+
+
+
