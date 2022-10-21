@@ -10,12 +10,16 @@ import sys
 import os
 from homeassistant_api import Client,State
 
-FRAMERATE=16
+SINGLE_CYCLE=True
+SHOW_IMAGES=False
+
+FRAMERATE=32
 TICK_THRESH=50
-SLICEX = 140
+SLICEX = 120
+ROTATE_ANGLE=1.5
 
 level_avg_win = []
-AVG_POINTS = 10.0
+AVG_POINTS = 25.0
 
 api_url = "http://homeassistant.local:8123/api"
 token = None
@@ -108,18 +112,28 @@ def update_level(client, level):
         print("Raw level is {:.1f}".format(level))
        
     else:
-        sum = 0.0
-        for i in range(0, len(level_avg_win), 1):
-            sum = sum + level_avg_win[i]
 
-        avg = sum / AVG_POINTS
+        avg_array = np.array(level_avg_win)
+        mean = np.mean(avg_array)
+        standard_deviation = np.std(avg_array)
+        distance_from_mean = abs(avg_array - mean)
 
-        level_avg_win = []
+        max_deviations = 1.1
+        not_outlier = distance_from_mean < max_deviations * standard_deviation
+        no_outliers = avg_array[not_outlier]
+
+        print("Removed outliers:")
+        print(no_outliers)
+        
+        avg = np.mean(no_outliers)
+
 
         print("New average level is {:.1f}".format(avg))
 
         new_state = client.set_state (State(state="{:.1f}".format(avg), entity_id='sensor.oil_tank_level'))
 
+        level_avg_win = []
+        
         return True
 
     return False
@@ -137,34 +151,45 @@ with Client(api_url, token) as client:
 
     for frame in camera.capture_continuous(raw_capture, format="bgr", use_video_port=True):
 
-        # crop and rotate the image 180 degrees
-        image = frame.array[0:549,300:500]
-
+        # crop and rotate the image to correct, then 180 degrees because of upside down camera
+        image = rotate_image(frame.array, ROTATE_ANGLE)
         image = cv2.rotate(image, 1, cv2.ROTATE_180)
-        
-        # crop a slice to find the indicators
-        cropped = image[0:549, SLICEX:160]
+        image = image[0:574,320:520]
 
-        # find the black tick lines using threshold
+        if SHOW_IMAGES:
+            cv2.imshow("Image", image)
+       
+
+        # crop a slice to find the indicators
+        cropped = image[0:574, SLICEX:SLICEX+20]
+
+        if SHOW_IMAGES:
+            cv2.imshow("Cropped", cropped)
+
+        # convert to an inverted threshold image to find the tick marks
         img_gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
         ret, thresh = cv2.threshold(img_gray, TICK_THRESH, 255, cv2.THRESH_BINARY)
-
-        # invert the threshold image
         thresh_inv = cv2.bitwise_not(thresh)
 
+        if SHOW_IMAGES:
+            cv2.imshow("Inv Thresh", thresh_inv)
+        
         # find contours that represent the tick marks
         tick_contours, tick_hierarchy = cv2.findContours(image=thresh_inv, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_NONE)
 
         # find the red indicator with a mask and range
-        hsv = cv2.cvtColor(cropped, cv2.COLOR_BGR2HSV)
+        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
         lower_red = np.array([137,112,0])
         upper_red = np.array([179,255,255])
         redmask = cv2.inRange(hsv, lower_red, upper_red)
-        res = cv2.bitwise_and(cropped, cropped, mask= redmask)
+        res = cv2.bitwise_and(image, image, mask= redmask)
 
         ind_gray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
         ret, ind_thresh = cv2.threshold(ind_gray, 1, 10, cv2.THRESH_BINARY)
 
+        if SHOW_IMAGES:
+            cv2.imshow("Indicator Threshold", ind_gray)
+        
         # find contours for the indicator
         ind_contours, ind_hierarchy = cv2.findContours(image=ind_thresh, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_SIMPLE)
 
@@ -173,9 +198,18 @@ with Client(api_url, token) as client:
         if level is not None:
             if update_level(client, level):
                 cv2.imwrite("/var/www/html/gauge.png", gauge)
-                break
 
+                if SHOW_IMAGES:
+                    cv2.imshow("Gauge", gauge)
+                
+                if SINGLE_CYCLE:
+                    break
+
+        key = cv2.waitKey(1) & 0xFF
         raw_capture.truncate(0)
+        if key == ord("q"):
+            break
+
 
 
 
