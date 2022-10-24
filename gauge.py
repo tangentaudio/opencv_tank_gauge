@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import argparse
 from picamera import PiCamera
 from picamera.array import PiRGBArray
 from datetime import datetime
@@ -10,13 +11,21 @@ import sys
 import os
 from homeassistant_api import Client,State
 
-SINGLE_CYCLE=True
-SHOW_IMAGES=False
+
+parser = argparse.ArgumentParser(prog='gauge.py')
+parser.add_argument('--tune', help='Interactive tuning mode', action='store_true')
+ns = parser.parse_args()
+
+args = vars(ns)
+print(args)
+
+SINGLE_CYCLE=not args['tune']
+SHOW_IMAGES=args['tune']
 
 FRAMERATE=32
-TICK_THRESH=50
+TICK_THRESH=58
 SLICEX = 120
-ROTATE_ANGLE=1.5
+ROTATE_ANGLE=0
 
 level_avg_win = []
 AVG_POINTS = 25.0
@@ -156,15 +165,11 @@ with Client(api_url, token) as client:
         image = cv2.rotate(image, 1, cv2.ROTATE_180)
         image = image[0:574,320:520]
 
-        if SHOW_IMAGES:
-            cv2.imshow("Image", image)
-       
-
         # crop a slice to find the indicators
         cropped = image[0:574, SLICEX:SLICEX+20]
 
         if SHOW_IMAGES:
-            cv2.imshow("Cropped", cropped)
+            preview = image.copy()
 
         # convert to an inverted threshold image to find the tick marks
         img_gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
@@ -172,29 +177,39 @@ with Client(api_url, token) as client:
         thresh_inv = cv2.bitwise_not(thresh)
 
         if SHOW_IMAGES:
-            cv2.imshow("Inv Thresh", thresh_inv)
+            im = cv2.cvtColor(thresh_inv, cv2.COLOR_GRAY2BGR)            
+            preview[0:cropped.shape[0], SLICEX:SLICEX+cropped.shape[1]] = im
         
         # find contours that represent the tick marks
         tick_contours, tick_hierarchy = cv2.findContours(image=thresh_inv, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_NONE)
 
         # find the red indicator with a mask and range
         hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-        lower_red = np.array([137,112,0])
+        lower_red = np.array([145,112,0])
         upper_red = np.array([179,255,255])
         redmask = cv2.inRange(hsv, lower_red, upper_red)
         res = cv2.bitwise_and(image, image, mask= redmask)
+        res = cv2.blur(res, (4,4), cv2.BORDER_DEFAULT)
 
         ind_gray = cv2.cvtColor(res, cv2.COLOR_BGR2GRAY)
         ret, ind_thresh = cv2.threshold(ind_gray, 1, 10, cv2.THRESH_BINARY)
 
-        if SHOW_IMAGES:
-            cv2.imshow("Indicator Threshold", ind_gray)
-        
         # find contours for the indicator
         ind_contours, ind_hierarchy = cv2.findContours(image=ind_thresh, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_SIMPLE)
 
         level, gauge = interpolate(tick_contours, ind_contours, image)
 
+        if SHOW_IMAGES:
+            if (len(ind_contours) >= 1):
+                print(cv2.contourArea(ind_contours[0]))
+                x,y,w,h = cv2.boundingRect(ind_contours[0])
+                
+                cv2.rectangle(preview, (x,y), (x+w, y+h), (0,0,255), 2)
+
+            cv2.imshow("Preview", preview)
+        
+
+        
         if level is not None:
             if update_level(client, level):
                 cv2.imwrite("/var/www/html/gauge.png", gauge)
