@@ -4,6 +4,8 @@ import sqlite3
 from flask import Flask, render_template, jsonify, request, redirect, url_for, Response, g
 from gaugecv import GaugeCV
 import picamera
+import time
+from random import uniform
 
 app = Flask(__name__, static_url_path='', static_folder='static', template_folder='templates')
 
@@ -141,6 +143,13 @@ def current_level():
     except:
         return jsonify(error="Pi Camera is busy!")
 
+@app.route('/random_test')
+def random_level():
+    time.sleep(4)
+    level=round(uniform(0.0, 100.0), 1)
+    print("Returning random level {l}".format(l=level))
+    return jsonify(level=level)
+    
 @app.route('/tune')
 def index():
     return render_template('tune.html')
