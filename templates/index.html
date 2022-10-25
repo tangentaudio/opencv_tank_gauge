@@ -45,7 +45,12 @@
     <div class="related-config-container">
       <div class="slider-container"><div class="slider-label">Tick Threshold</div><div id="tick_threshold" class="slider"></div></div>
     </div>
-  </div>
+
+    <div class="related-config-container">
+      <div class="slider-container"><div class="slider-label">Level Average Points</div><div id="level_average_points" class="slider"></div></div>
+      <div class="slider-container"><div class="slider-label">Level Max Deviation</div><div id="level_max_deviation" class="slider"></div></div>
+    </div>
+</div>
 
   <script>
     function setconfig(evt, ui, id) {
@@ -63,6 +68,8 @@
     $("#slice_x1").slider( {{ template_slider("slice_x1") |safe }} )
     $("#slice_x2").slider( {{ template_slider("slice_x2") |safe }} )
     $("#tick_threshold").slider( {{ template_slider("tick_threshold") |safe }} )
+    $("#level_average_points").slider( {{ template_slider("level_average_points") |safe }} )
+    $("#level_max_deviation").slider( {{ template_slider("level_max_deviation", 0.1) |safe }} )
   </script>
   
 

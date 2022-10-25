@@ -2,14 +2,17 @@
 
 import sqlite3
 from flask import Flask, render_template, jsonify, request, redirect, url_for, Response, g
-from picamera import PiCamera
-from picamera.array import PiRGBArray
-import numpy as np
-import cv2
+from gaugecv import GaugeCV
 
 app = Flask(__name__, static_url_path='', static_folder='static', template_folder='templates')
 
 DATABASE = 'db/gauge.db'
+
+def get_cv():
+    cv = getattr(g, '_cv', None)
+    if cv is None:
+        cv = g._cv = GaugeCV()
+    return cv
 
 def get_db():
     db = getattr(g, '_database', None)
@@ -52,6 +55,15 @@ def get_config_int(key, default=0):
 def set_config_val(key, value):
     res = update_db("UPDATE config SET value = ? WHERE key = ?", [value, str(key)])
 
+def get_config():
+    rows = query_db("SELECT key,value FROM config")
+    d = {}
+    if rows is not None:
+        for row in rows:
+            d[row['key']] = row['value']
+        
+    return d
+    
 def template_slider(id, step=1.0):
     cfg = get_config_val(id)
     
@@ -65,50 +77,31 @@ def template_slider(id, step=1.0):
     change: function(event, ui) {{ setconfig(event, ui, "{id}") }}
     }}'''.format(min=cfg['min'], max=cfg['max'], value=cfg['value'], step=step, id=id)
 
-def rotate_image(image, angle):
-  image_center = tuple(np.array(image.shape[1::-1]) / 2)
-  rot_mat = cv2.getRotationMatrix2D(image_center, angle, 1.0)
-  result = cv2.warpAffine(image, rot_mat, image.shape[1::-1], flags=cv2.INTER_LINEAR)
-  return result
 
 def gen_frames():
-    with PiCamera() as camera:
-        streaming = True
+    streaming = True
             
-        while streaming:        
-            camera.resolution = (800,608)
-            with PiRGBArray(camera, size=(800, 608)) as output:
-                camera.capture(output, format="bgr")
-                frame = output.array
-                frame = cv2.rotate(frame, 1, cv2.ROTATE_180)
-
-                with app.app_context():
-                    crop_x1 = get_config_int('crop_x1')
-                    crop_y1 = get_config_int('crop_y1')
-                    crop_x2 = get_config_int('crop_x2')
-                    crop_y2 = get_config_int('crop_y2')
-
-                    slice_x1 = get_config_int('slice_x1')
-                    slice_x2 = get_config_int('slice_x2')
-
-                    rotate_angle = get_config_val('rotate_angle')['value']
-
-                    frame = rotate_image(frame, -(rotate_angle))
-                    frame = cv2.rectangle(frame, (crop_x1, crop_y1), (crop_x2, crop_y2), (192, 192,0), 1)
-
-                    frame = cv2.rectangle(frame, (slice_x1, crop_y1), (slice_x2, crop_y2), (255,255,0), 1)
-
-                ret, buffer = cv2.imencode('.jpg', frame)
-                frame = buffer.tobytes()
-
-                try:
+    while streaming:        
+        with app.app_context():
+            cv = get_cv()
+            cv.set_config(get_config())
+            
+            cv.process_image()
+            
+            try:
+                frame = cv.get_encoded()
+                if frame is not None:
                     yield (b'--frame\r\n'
                            b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-                except GeneratorExit:
-                    print("Generator exits, closing camera")
-                    camera.close()
+                else:
                     streaming = False
-        print("Done streaming.")
+                    
+            except GeneratorExit:
+                print("Generator exited, closing camera.")
+                cv.close()
+                streaming = False
+
+    print("Done streaming.")
 
 @app.route('/video_feed')
 def video_feed():
