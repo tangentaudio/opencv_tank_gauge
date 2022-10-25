@@ -6,10 +6,12 @@ from datetime import datetime
 
 class GaugeCV:
     def __init__(self):
+        print("GaugeCV __init__")
         self.level_avg_win = []
         self.config = {}
         self.camera = None
         self.preview = None
+        self.avg = 0.0
 
     def set_config(self, d):
         self.config = d
@@ -41,7 +43,7 @@ class GaugeCV:
 
         image_h = image.shape[0]
         image_w = image.shape[1]
-        legend_w = 100
+        legend_w = 25
 
         if len(tick_contours) < 5 or len(indicator_contours) < 1:
             return [None, image]
@@ -94,25 +96,20 @@ class GaugeCV:
       return result
 
     def average_level(self, level):
-        if len(self.level_avg_win) < self.config['level_average_points']:
-            self.level_avg_win.append(level)
 
+        if len(self.level_avg_win) < self.config_int('level_average_points'):
+            self.level_avg_win.append(level)
         else:
-            avg_array = np.array(level_avg_win)
+            avg_array = np.array(self.level_avg_win)
             mean = np.mean(avg_array)
             standard_deviation = np.std(avg_array)
             distance_from_mean = abs(avg_array - mean)
 
             max_deviations = self.config['level_max_deviation']
-            not_outlier = distance_from_mean < max_deviations * standard_deviation
+            not_outlier = distance_from_mean <= max_deviations * standard_deviation
             no_outliers = avg_array[not_outlier]
 
-            print("Removed outliers:")
-            print(no_outliers)
-
             avg = np.mean(no_outliers)
-
-            print("New average level is {:.1f}".format(avg))
 
             self.level_avg_win = []
 
@@ -188,17 +185,18 @@ class GaugeCV:
                 # draw the crops on the preview
                 preview = cv2.rectangle(preview, (crop_x1, crop_y1), (crop_x2, crop_y2), (0,32,192), 2)
                 preview = cv2.rectangle(preview, (slice_x1, crop_y1), (slice_x2, crop_y2), (0,192,0), 2)
-                
-
-                level, gauge = self.interpolate(tick_contours, ind_contours, preview)
+              
+                level, preview = self.interpolate(tick_contours, ind_contours, preview)
 
                 self.preview = preview
                 
                 avg = None
                 if level is not None:
                     avg = self.average_level(level)
-                    return True
-                
+                    if avg is not None:
+                        self.avg = avg
+                        return True
+               
         return False
 
     def close(self):
@@ -210,4 +208,13 @@ class GaugeCV:
             ret, buffer = cv2.imencode('.jpg', self.preview)
             return buffer.tobytes()
         return None
-        
+
+    def get_error_image_encoded(self):
+        image = np.zeros((608,800,3), np.uint8)
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        image = cv2.putText(image,'Pi Camera Busy',(270,340), font, 1,(0,0,255),2,cv2.LINE_AA)
+        ret, buffer = cv2.imencode('.jpg', image)
+        return buffer.tobytes()
+    
+    def get_avg(self):
+        return self.avg

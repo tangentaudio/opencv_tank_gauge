@@ -3,16 +3,16 @@
 import sqlite3
 from flask import Flask, render_template, jsonify, request, redirect, url_for, Response, g
 from gaugecv import GaugeCV
+import picamera
 
 app = Flask(__name__, static_url_path='', static_folder='static', template_folder='templates')
 
 DATABASE = 'db/gauge.db'
 
+_cv = GaugeCV()
+  
 def get_cv():
-    cv = getattr(g, '_cv', None)
-    if cv is None:
-        cv = g._cv = GaugeCV()
-    return cv
+    return _cv
 
 def get_db():
     db = getattr(g, '_database', None)
@@ -79,30 +79,40 @@ def template_slider(id, step=1.0):
 
 
 def gen_frames():
-    streaming = True
-            
-    while streaming:        
-        with app.app_context():
-            cv = get_cv()
-            cv.set_config(get_config())
-            
-            cv.process_image()
-            
+    with app.app_context():
+        streaming = True
+
+        while streaming:
             try:
-                frame = cv.get_encoded()
-                if frame is not None:
-                    yield (b'--frame\r\n'
-                           b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-                else:
+                cv = get_cv()
+                cv.set_config(get_config())
+                cv.process_image()
+
+                try:
+                    frame = cv.get_encoded()
+                    if frame is not None:
+                        yield (b'--frame\r\n'
+                               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                    else:
+                        streaming = False
+
+                except GeneratorExit:
+                    print("Generator exited, closing camera.")
+                    cv.close()
                     streaming = False
-                    
-            except GeneratorExit:
-                print("Generator exited, closing camera.")
-                cv.close()
-                streaming = False
+            except:
+                cv = get_cv()
+                frame = cv.get_error_image_encoded()
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+                
 
-    print("Done streaming.")
+        print("Done streaming.")
 
+
+
+
+    
 @app.route('/video_feed')
 def video_feed():
     return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
@@ -115,8 +125,25 @@ def slide():
     return value
 
 @app.route('/')
+def current_level():
+    try:
+        with app.app_context():
+            cv = get_cv()
+            cv.close()
+            
+            cv.set_config(get_config())
+            
+            while cv.process_image() is not True:
+                print("processed frame")
+                        
+            return jsonify(level=round(cv.get_avg(), 1))
+            
+    except:
+        return jsonify(error="Pi Camera is busy!")
+
+@app.route('/tune')
 def index():
-    return render_template('index.html')
+    return render_template('tune.html')
 
 
 if __name__ == '__main__':
