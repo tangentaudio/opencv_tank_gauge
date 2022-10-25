@@ -1,0 +1,25 @@
+.image {
+    padding: 10px;
+}
+
+.related-config-container {
+    border-top: 1px solid black;
+    background: #eeeeee;
+    padding: 10px;
+    margins: 2px;
+}
+.slider-container {
+    font-weight: bold;
+    font: 12px Arial, Helvetica, sans-serif;
+    padding: 2px;
+    display: flex;
+}
+
+.slider-label {
+    width: 150px;
+}
+
+.slider {
+    width: 100%;
+
+}

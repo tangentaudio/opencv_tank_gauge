@@ -1,2 +1,4 @@
 token.hass
-
+db/gauge.db
+*~
+*/*~

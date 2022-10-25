@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+        integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+  
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }} ">
+  <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
+  <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
+      
+  <title>OpenCV Tank Gauge</title>
+</head>
+<body>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8  offset-lg-2">
+	<h3 class="mt-5">Tank Gauge</h3>
+	<img src="{{ url_for('video_feed') }}" width="100%" class="image">
+      </div>
+    </div>
+    
+    <div class="related-config-container">
+      <div class="slider-container"><div class="slider-label">Rotate Angle</div><div id="rotate_angle" class="slider"></div></div>
+    </div>
+    
+    <div class="related-config-container">
+      <div class="slider-container"><div class="slider-label">Upper Left Crop X</div><div id="crop_x1" class="slider"></div></div>
+      <div class="slider-container"><div class="slider-label">Upper Left Crop Y</div><div id="crop_y1" class="slider"></div></div>
+    </div>
+
+    <div class="related-config-container">
+      <div class="slider-container"><div class="slider-label">Lower Right Crop X</div><div id="crop_x2" class="slider"></div></div>
+      <div class="slider-container"><div class="slider-label">Lower Right Crop Y</div><div id="crop_y2" class="slider"></div></div>
+    </div>
+
+    <div class="related-config-container">
+      <div class="slider-container"><div class="slider-label">Left Slice X</div><div id="slice_x1" class="slider"></div></div>
+      <div class="slider-container"><div class="slider-label">Right Slice X</div><div id="slice_x2" class="slider"></div></div>
+    </div>
+
+    <div class="related-config-container">
+      <div class="slider-container"><div class="slider-label">Tick Threshold</div><div id="tick_threshold" class="slider"></div></div>
+    </div>
+  </div>
+
+  <script>
+    function setconfig(evt, ui, id) {
+        $.getJSON('/setconfig', {
+	    id: id,
+	    value: ui.value
+        });
+    }
+
+    $("#rotate_angle").slider( {{ template_slider("rotate_angle", 0.1) |safe }} )
+    $("#crop_x1").slider( {{ template_slider("crop_x1") |safe }} )
+    $("#crop_y1").slider( {{ template_slider("crop_y1") |safe }} )
+    $("#crop_x2").slider( {{ template_slider("crop_x2") |safe }} )
+    $("#crop_y2").slider( {{ template_slider("crop_y2") |safe }} )
+    $("#slice_x1").slider( {{ template_slider("slice_x1") |safe }} )
+    $("#slice_x2").slider( {{ template_slider("slice_x2") |safe }} )
+    $("#tick_threshold").slider( {{ template_slider("tick_threshold") |safe }} )
+  </script>
+  
+
+</body>
+</html>
