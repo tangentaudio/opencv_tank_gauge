@@ -31,6 +31,8 @@ class GaugeCV:
 
         slice_x1 = self.config_int('slice_x1')
         slice_x2 = self.config_int('slice_x2')
+        crop_x1 = self.config_int('crop_x1')
+        crop_x2 = self.config_int('crop_x2')
         crop_y1 = self.config_int('crop_y1')
         
         tick_fp = [100.0,75.0,50.0,25.0,0.0]
@@ -71,12 +73,12 @@ class GaugeCV:
 
                 image=cv2.rectangle(image,(slice_x2,yval),(slice_x2 + legend_w,yval),(0,255,0),2)
 
-                image=cv2.putText(image, "{:.0f}%".format(fpval), (slice_x2+legend_w,yval+10), font, 0.7, (0,255,0), 2, cv2.LINE_AA) 
+                image=cv2.putText(image, "{:.0f}%".format(fpval), (slice_x2+legend_w,yval+10), font, 1.0, (0,255,0), 2, cv2.LINE_AA) 
 
             level = np.interp([indicator_yval], tick_yvals, tick_fp)[0]
 
-            image=cv2.rectangle(image,(0,indicator_yval+crop_y1),(slice_x1,indicator_yval + crop_y1),(0,0,255),3)
-            image=cv2.putText(image, "{:.1f}%".format(level), (10,indicator_yval+crop_y1-5), font, 0.7, (0,0,255), 2, cv2.LINE_AA) 
+            image=cv2.rectangle(image,(crop_x1-legend_w,indicator_yval+crop_y1),(crop_x2,indicator_yval + crop_y1),(0,0,255),3)
+            image=cv2.putText(image, "{:.1f}%".format(level), (crop_x1-legend_w-100,indicator_yval+crop_y1+10), font, 1.0, (0,0,255), 2, cv2.LINE_AA) 
 
             now = datetime.now()
             dt_string = now.strftime("%m/%d/%Y %H:%M:%S")        
@@ -94,7 +96,6 @@ class GaugeCV:
     def average_level(self, level):
         if len(self.level_avg_win) < self.config['level_average_points']:
             self.level_avg_win.append(level)
-            print("Raw level is {:.1f}".format(level))
 
         else:
             avg_array = np.array(level_avg_win)
@@ -151,7 +152,8 @@ class GaugeCV:
                 tick_thresh_inv = cv2.bitwise_not(tick_thresh)
 
                 # copy the inverted threshold image onto the preview image in the correct location
-                tick_thresh_inv_bgr = cv2.cvtColor(tick_thresh_inv, cv2.COLOR_GRAY2BGR)            
+                tick_thresh_inv_bgr = cv2.cvtColor(tick_thresh_inv, cv2.COLOR_GRAY2BGR)
+                tick_thresh_inv_bgr = cv2.bitwise_or(tick_crop, tick_thresh_inv_bgr)
                 preview[crop_y1:crop_y1 + tick_crop.shape[0], slice_x1:slice_x1+tick_crop.shape[1]] = tick_thresh_inv_bgr
                 
                 # find contours that represent the tick marks
@@ -159,8 +161,7 @@ class GaugeCV:
                
                 # crop a rectangle from the image to find the indicator
                 ind_crop = image[crop_y1:crop_y2, crop_x1:crop_x2]
-                preview = cv2.rectangle(preview, (crop_x1, crop_y1), (crop_x2, crop_y2), (0,32,192,0), 2)
-                
+
                 # find the red indicator with a mask and range
                 ind_crop_hsv = cv2.cvtColor(ind_crop, cv2.COLOR_BGR2HSV)
 
@@ -172,10 +173,22 @@ class GaugeCV:
                 ind_masked = cv2.blur(ind_masked, (4,4), cv2.BORDER_DEFAULT)
 
                 ind_masked_gray = cv2.cvtColor(ind_masked, cv2.COLOR_BGR2GRAY)
-                ret, ind_masked_thresh = cv2.threshold(ind_masked_gray, 1, 10, cv2.THRESH_BINARY)
+                ret, ind_masked_thresh = cv2.threshold(ind_masked_gray, 50, 255, cv2.THRESH_BINARY)
 
+                # copy the indicator threshold image onto the preview
+                prev_ind_thresh = cv2.cvtColor(ind_masked_thresh, cv2.COLOR_GRAY2BGR)
+                prev_ind_thresh = cv2.bitwise_or(ind_crop, prev_ind_thresh)
+                
+                preview[crop_y1:crop_y1 + prev_ind_thresh.shape[0], crop_x1:crop_x1+prev_ind_thresh.shape[1]] = prev_ind_thresh
+                
+                
                 # find contours for the indicator
                 ind_contours, ind_hierarchy = cv2.findContours(image=ind_masked_thresh, mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_SIMPLE)
+
+                # draw the crops on the preview
+                preview = cv2.rectangle(preview, (crop_x1, crop_y1), (crop_x2, crop_y2), (0,32,192), 2)
+                preview = cv2.rectangle(preview, (slice_x1, crop_y1), (slice_x2, crop_y2), (0,192,0), 2)
+                
 
                 level, gauge = self.interpolate(tick_contours, ind_contours, preview)
 
