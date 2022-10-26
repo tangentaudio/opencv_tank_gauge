@@ -136,15 +136,16 @@ if __name__ == '__main__':
 
         try:
             gauge.set_state(States.QUERY)
-            r = requests.get('http://localhost:8080/random_test')
+            #r = requests.get('http://localhost:8080/random_test')
+            r = requests.get('http://localhost:8080/')
             j = r.json()
             print(j['level'])
             gauge.set_level(j['level'])
             gauge.set_state(States.LEVEL)
 
-            time.sleep(10)
+            time.sleep(30)
             
-        except requests.exceptions.ConnectionError:
+        except:
             gauge.set_state(States.ERROR)
             time.sleep(5)
 

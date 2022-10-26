@@ -11,11 +11,8 @@ app = Flask(__name__, static_url_path='', static_folder='static', template_folde
 
 DATABASE = 'db/gauge.db'
 
-_cv = GaugeCV()
+cv = GaugeCV()
   
-def get_cv():
-    return _cv
-
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
@@ -81,38 +78,22 @@ def template_slider(id, step=1.0):
 
 
 def gen_frames():
-    with app.app_context():
-        streaming = True
+    streaming = True
 
-        while streaming:
-            try:
-                cv = get_cv()
-                cv.set_config(get_config())
-                cv.process_image()
-
-                try:
-                    frame = cv.get_encoded()
-                    if frame is not None:
-                        yield (b'--frame\r\n'
-                               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-                    else:
-                        streaming = False
-
-                except GeneratorExit:
-                    print("Generator exited, closing camera.")
-                    cv.close()
-                    streaming = False
-            except:
-                cv = get_cv()
+    while streaming:
+        try:
+            frame = cv.get_encoded()
+            if frame is None:
                 frame = cv.get_error_image_encoded()
-                yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
                 
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
-        print("Done streaming.")
+                    
+        except GeneratorExit:
+            streaming = False
 
-
-
+    print("Done streaming.")
 
     
 @app.route('/video_feed')
@@ -124,24 +105,20 @@ def slide():
     id = request.args.get('id')
     value = request.args.get('value')
     set_config_val(id, value)
+
+    with app.app_context():
+        cv.set_config(get_config())
+        
     return value
 
 @app.route('/')
 def current_level():
-    try:
-        with app.app_context():
-            cv = get_cv()
-            cv.close()
-            
-            cv.set_config(get_config())
-            
-            while cv.process_image() is not True:
-                print("processed frame")
-                        
-            return jsonify(level=round(cv.get_avg(), 1))
-            
-    except:
-        return jsonify(error="Pi Camera is busy!")
+    avg, update_time = cv.get_avg()
+
+    if avg is not None:
+        return jsonify(level=round(avg, 1), update_time=update_time)
+    
+    return jsonify(error="No level reading available")
 
 @app.route('/random_test')
 def random_level():
@@ -157,5 +134,10 @@ def index():
 
 if __name__ == '__main__':
     app.jinja_env.globals.update(template_slider=template_slider)
+    with app.app_context():
+        cv.set_config(get_config())
+
     app.run(debug=False, host='0.0.0.0', port=8080)
+
+    
 
