@@ -42,7 +42,6 @@ class GaugeCV:
         t.start()
 
     def stop(self):
-        print("Stopping GaugeCV thread")
         self.running = False
         
     def thread_func(self):
@@ -52,7 +51,6 @@ class GaugeCV:
                 while self.running:
                     if self.get_config():
                         self.process_image()
-                        print("process frame")
                     else:
                         print("Incomplete config")
                         time.sleep(1)

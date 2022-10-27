@@ -1,0 +1,15 @@
+[Unit]
+Description=OpenCV Tank Gauge Image Processing
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=2
+User=gauge
+WorkingDirectory=/opt/opencv_tank_gauge/cv
+ExecStart=/usr/bin/python gauge.py
+
+[Install]
+WantedBy=multi-user.target
