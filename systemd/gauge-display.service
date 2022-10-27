@@ -7,7 +7,7 @@ StartLimitIntervalSec=0
 Type=simple
 Restart=always
 RestartSec=2
-User=gauge
+User=root
 WorkingDirectory=/opt/opencv_tank_gauge/clients
 ExecStart=/usr/bin/python display.py
 
