@@ -15,9 +15,6 @@ def get_redis_value(key):
     rd = redis.Redis(host='localhost', db=0)
     return rd.get(key)
 
-def update_db(query, args=()):
-    pass
-
 def get_config_val(key):
     v = Config.query.filter(Config.key == key).first()
 
@@ -29,19 +26,19 @@ def get_config_val(key):
 def get_config_int(key, default=0):
     v = get_config_val(key)
     if v is not None:
-        return int(v['value'])
+        return int(v.value)
     return default
 
 def set_config_val(key, value):
-    #res = update_db("UPDATE config SET value = ? WHERE key = ?", [value, str(key)])
-    pass
+    c = Config.query.filter(Config.key == key).first()
+    c.value = value
+    db.session.commit()
 
 def copy_config_to_redis():
-    rows = query_db("SELECT key,value FROM config")
+    rows = Config.query.all()
 
-    if rows is not None:
-        for row in rows:
-            set_redis_value('_config_' + row['key'], row['value'])
+    for row in rows:
+        set_redis_value('_config_' + row.key, row.value)
         
     
 def template_slider(id, step=1.0):
@@ -83,7 +80,7 @@ def slide():
     value = request.args.get('value')
     set_config_val(id, value)
 
-    set_redis_value(id, value)
+    set_redis_value('_config_' + id, value)
         
     return value
 
