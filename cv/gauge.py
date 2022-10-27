@@ -1,16 +1,33 @@
+#!/usr/bin/python
+
+import redis
 from picamera import PiCamera
 from picamera.array import PiRGBArray
 import cv2
 import numpy as np
 from datetime import datetime
-from threading import Thread, Lock
+from threading import Thread
 import time
 
 class GaugeCV:
+
+    REQUIRED_CONFIG_KEYS = \
+        ['rotate_angle',
+         'crop_x1',
+         'crop_x2',
+         'crop_y1',
+         'crop_y2',
+         'slice_x1',
+         'slice_x2',
+         'tick_threshold',
+         'level_average_points',
+         'level_max_deviation']
+
     def __init__(self):
-        self.config_lock = Lock()
-        self.preview_lock = Lock()
-        self.avg_lock = Lock()
+        GaugeCV.REQUIRED_CONFIG_KEYS.sort()
+        
+        self.rd = redis.Redis(host='localhost', port=6379, db=0)
+        
         self.level_avg_win = []
         self.config = {}
         self.camera = None
@@ -33,25 +50,31 @@ class GaugeCV:
             self.camera.resolution = (800,608)
             with PiRGBArray(self.camera, size=(800, 608)) as self.cam_buf:
                 while self.running:
-                    if self.have_config():
+                    if self.get_config():
                         self.process_image()
+                        print("process frame")
                     else:
+                        print("Incomplete config")
                         time.sleep(1)
                         
-    def have_config(self):
-        with self.config_lock:
-            return len(self.config) > 0
-                    
-    def set_config(self, d):
-        with self.config_lock:
-            self.config = d
+    def get_config(self):
+        have_keys = []
+        for key in GaugeCV.REQUIRED_CONFIG_KEYS:
+            value = self.rd.get('_config_' + key)
+            if value is not None:
+                value = value.decode('utf-8')
+                self.config[key] = float(value)
+                have_keys.append(key)
 
+        have_keys.sort()
+
+        return GaugeCV.REQUIRED_CONFIG_KEYS == have_keys
+                    
     def config_int(self, key, default=0):
-        with self.config_lock:
-            if key in self.config:
-                return int(self.config[key])
-            else:
-                return default
+        if key in self.config:
+            return int(self.config[key])
+        else:
+            return default
 
     def contour_area(self, contours):
         cnt_area = []
@@ -218,17 +241,16 @@ class GaugeCV:
 
         level, preview = self.interpolate(tick_contours, ind_contours, preview)
 
-        with self.preview_lock:
-            self.preview = preview.copy()
-
+        if preview is not None:
+            ret, buffer = cv2.imencode('.jpg', preview)
+            self.rd.set('encoded_preview', buffer.tobytes())
+            
         avg = None
         if level is not None:
             avg = self.average_level(level)
             if avg is not None:
-
-                with self.avg_lock:
-                    self.avg = avg
-                    self.avg_update_time = datetime.now()
+                self.rd.set('avg_level', avg)
+                self.rd.set('avg_update_time', str(datetime.now()))
 
                 return True
 
@@ -238,25 +260,9 @@ class GaugeCV:
         if self.camera is not None:
             self.camera.close()
 
-    def get_encoded(self):
-        preview = None
-        with self.preview_lock:
-            if self.preview is not None:
-                preview = self.preview.copy()
-        
-        if preview is not None:
-            ret, buffer = cv2.imencode('.jpg', preview)
-            return buffer.tobytes()
-        return None
 
-    def get_error_image_encoded(self):
-        image = np.zeros((608,800,3), np.uint8)
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        image = cv2.putText(image,'Image Unavailable',(270,340), font, 1,(0,0,255),2,cv2.LINE_AA)
-        ret, buffer = cv2.imencode('.jpg', image)
-        return buffer.tobytes()
-    
-    def get_avg(self):
-        with self.avg_lock:
-            return self.avg, self.avg_update_time
 
+if __name__ == '__main__':
+    cv = GaugeCV()
+    while True:
+        time.sleep(1)
