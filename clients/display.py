@@ -1,11 +1,12 @@
 #!/usr/bin/python3
 
 import time
+from datetime import datetime
 import board
 import neopixel
-import requests
 from threading import Thread,Lock
 from enum import Enum
+import redis
 
 class States(Enum):
     INIT = 1
@@ -18,6 +19,7 @@ class GaugePixels:
         self.pixels = neopixel.NeoPixel(board.D21, 16, brightness=0.1, pixel_order=neopixel.GRB, auto_write=False)
 
         self.state = States.INIT
+        self.state_update = True
         self.phase = 0
         self.level = 0.0
         self.warn = False
@@ -53,13 +55,18 @@ class GaugePixels:
         
     def thread_func(self):
         while True:
-            self.lock.acquire()
-            state = self.state
-            phase = self.phase
-            level = self.level
-            warn = self.warn
-            self.lock.release()
+            with self.lock:
+                state = self.state
+                state_update = self.state_update
+                phase = self.phase
+                level = self.level
+                warn = self.warn
 
+            if state_update:
+                phase = 0
+            else:
+                phase = phase + 1
+                
             if state == States.INIT:
                 if phase == 0:
                     self.pixels.fill((0,0,255))
@@ -76,7 +83,7 @@ class GaugePixels:
                     self.pixels.fill((0,0,0))
                     self.pixels.show()
                 elif phase == 10:
-                    phase = -1
+                    phase = 0
                 pass
             elif state == States.QUERY:
                 if phase == 0:
@@ -88,64 +95,81 @@ class GaugePixels:
                     self.pixels[8] = (0,0,255)
                     self.pixels.show()
                 elif phase == 6:
-                    phase = -1
+                    phase = 0
                     
             elif state == States.LEVEL:
                 if phase == 0:
-                    warn, l = self.display_level(level, True)
+                    # show level and top LED as blue to indicate an update
+                    warn, last = self.display_level(level, False)
+                    self.pixels[15] = (0, 0, 255)
+                    self.pixels.show()
 
                 elif phase == 10:
+                    # show the plain level
+                    warn, last = self.display_level(level, True)
+                    
+                elif phase == 15:
+                    # blink the level if in warning state
                     if warn:
                         self.pixels.fill((0,0,0))
                         self.pixels.show()
 
-                elif phase == 15:
-                    phase = -1    
+                elif phase == 20:
+                    # jump back to plain level display in warning state
+                    if warn:
+                        phase = 10
+                    
+                    
             else:
                 pass
 
             time.sleep(0.100)
-            
-            self.lock.acquire()
-            if self.state != state:
-                phase = 0
-            else:
-                phase = phase + 1
-            self.phase = phase
-            self.warn = warn
-            self.lock.release()
+
+            with self.lock:
+                if state_update:
+                    self.state_update = False
+                self.phase = phase
+                self.warn = warn
+                
+
                 	
 
     def set_state(self, state):
-        self.lock.acquire()
-        self.state = state
-        self.lock.release()
+        with self.lock:
+            self.state = state
+            self.state_update = True
+
         print("set state={s}".format(s=state))
               
     def set_level(self, level):
-        self.lock.acquire()
-        self.level = level
-        self.lock.release()
+        with self.lock:
+            self.level = level
+
         print("set level={l}".format(l=level))
         
 if __name__ == '__main__':
     gauge = GaugePixels()
-    time.sleep(2)
+   
+    rd = redis.Redis(host='localhost', port=6379, db=0, charset='utf-8', decode_responses=True)
+    sub = rd.pubsub()
     
+    sub.subscribe('avg_level', 'avg_update_time')
     while True:
-
-        try:
-            gauge.set_state(States.QUERY)
-            #r = requests.get('http://localhost:8080/random_test')
-            r = requests.get('http://localhost:8080/')
-            j = r.json()
-            print(j['level'])
-            gauge.set_level(j['level'])
-            gauge.set_state(States.LEVEL)
-
-            time.sleep(30)
+        for msg in sub.listen():
+            if msg['type'] == 'message':
+                c = msg['channel']
+                d = msg['data']
             
-        except:
-            gauge.set_state(States.ERROR)
-            time.sleep(5)
+                if c == 'avg_level':
+                    level = float(d)
+                elif c == 'avg_update_time':
+                    update_time = datetime.strptime(d, '%Y-%m-%d %H:%M:%S.%f')
+                    age = (datetime.now() - update_time).total_seconds()
+
+                    if (age < 600.0):
+                        gauge.set_level(level)
+                        gauge.set_state(States.LEVEL)
+
+                    else:
+                        gauge.set_state(States.ERROR)
 

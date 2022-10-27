@@ -247,9 +247,13 @@ class GaugeCV:
         if level is not None:
             avg = self.average_level(level)
             if avg is not None:
+                now = str(datetime.now())
                 self.rd.set('avg_level', avg)
-                self.rd.set('avg_update_time', str(datetime.now()))
+                self.rd.set('avg_update_time', now)
 
+                self.rd.publish('avg_level', avg)
+                self.rd.publish('avg_update_time', now)
+                
                 return True
 
         return False

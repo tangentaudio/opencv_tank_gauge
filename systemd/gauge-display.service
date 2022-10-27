@@ -1,0 +1,15 @@
+[Unit]
+Description=OpenCV Tank Gauge Display Output
+After=network.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=2
+User=gauge
+WorkingDirectory=/opt/opencv_tank_gauge/clients
+ExecStart=/usr/bin/python display.py
+
+[Install]
+WantedBy=multi-user.target
