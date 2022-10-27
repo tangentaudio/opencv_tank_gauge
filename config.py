@@ -14,7 +14,7 @@ class Config:
     TEMPLATES_FOLDER = 'templates'
 
     # Database
-    SQLALCHEMY_DATABASE_URI = 'sqlite:////home/steve/opencv_tank_gauge/db/gauge.db'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:////opt/opencv_tank_gauge/db/gauge.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     
