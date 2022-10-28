@@ -11,7 +11,6 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }} ">
   <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
   <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
-  <script src="jquery.colorpicker.js"></script>
   
   <title>OpenCV Tank Gauge</title>
 </head>
@@ -35,6 +34,9 @@
 	<div class="control-container"><div class="control-label">Scale Crop X1</div><input id="slice_x1" class="spinner"></div>
 	<div class="control-container"><div class="control-label">Scale Crop X2</div><input id="slice_x2" class="spinner"></div>
 
+	<div class="control-container"><div class="control-label">Indicator Blur</div><input id="indicator_blur" class="spinner"></div>
+	<div class="control-container"><div class="control-label">Scale Blur</div><input id="tick_blur" class="spinner"></div>
+	
 	<div class="control-container"><div class="control-label">Indicator Threshold Level</div><input id="indicator_threshold" class="spinner"></div>
 
 	<div class="control-container"><div class="control-label">Scale Threshold Level</div><input id="tick_threshold" class="spinner"></div>
@@ -42,6 +44,7 @@
 	<div class="control-container"><div class="control-label">Average Window Size</div><input id="level_average_points" class="spinner"></div>
 	<div class="control-container"><div class="control-label">Level Max Deviation</div><input id="level_max_deviation" class="spinner"></div>
       </div>
+      
     </div>
 
   </div>
@@ -69,8 +72,10 @@
     $("#crop_y2").{{ template_spinner("crop_y2") |safe }}
     $("#slice_x1").{{ template_spinner("slice_x1") |safe }}
     $("#slice_x2").{{ template_spinner("slice_x2") |safe }}
-    $("#tick_threshold").{{ template_spinner("tick_threshold") |safe }}
+    $("#indicator_blur").{{ template_spinner("indicator_blur") |safe }}    
+    $("#tick_blur").{{ template_spinner("tick_blur") |safe }}
     $("#indicator_threshold").{{ template_spinner("indicator_threshold") |safe }}
+    $("#tick_threshold").{{ template_spinner("tick_threshold") |safe }}
     $("#level_average_points").{{ template_spinner("level_average_points") |safe }}
     $("#level_max_deviation").{{ template_spinner("level_max_deviation", step=0.1, fmt="n1") |safe }}
 

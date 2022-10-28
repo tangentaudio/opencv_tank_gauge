@@ -19,6 +19,8 @@ class GaugeCV:
          'crop_y2',
          'slice_x1',
          'slice_x2',
+         'indicator_blur',
+         'tick_blur',
          'tick_threshold',
          'indicator_threshold',
          'level_average_points',
@@ -229,6 +231,8 @@ class GaugeCV:
         slice_x1 = self.config_int('slice_x1')
         slice_x2 = self.config_int('slice_x2')
         rotate_angle = self.config['rotate_angle']
+        tick_blur = int(self.config['tick_blur'])
+        indicator_blur = int(self.config['indicator_blur'])
         tick_threshold = self.config['tick_threshold']
         indicator_threshold = self.config['indicator_threshold']
         
@@ -249,7 +253,7 @@ class GaugeCV:
 
         # convert to an inverted threshold image to find the tick marks
         tick_crop_gray = cv2.cvtColor(tick_crop, cv2.COLOR_BGR2GRAY)
-        tick_crop_gray = cv2.blur(tick_crop_gray, (4,4), cv2.BORDER_DEFAULT)
+        tick_crop_gray = cv2.blur(tick_crop_gray, (tick_blur,tick_blur), cv2.BORDER_DEFAULT)
         ret, tick_thresh = cv2.threshold(tick_crop_gray, tick_threshold, 255, cv2.THRESH_BINARY)
         tick_thresh_inv = cv2.bitwise_not(tick_thresh)
 
@@ -272,7 +276,7 @@ class GaugeCV:
 
         ind_red_mask = cv2.inRange(ind_crop_hsv, ind_lower_red, ind_upper_red)
         ind_masked = cv2.bitwise_and(ind_crop, ind_crop, mask=ind_red_mask)
-        ind_masked = cv2.blur(ind_masked, (4,4), cv2.BORDER_DEFAULT)
+        ind_masked = cv2.blur(ind_masked, (indicator_blur,indicator_blur), cv2.BORDER_DEFAULT)
 
         ind_masked_gray = cv2.cvtColor(ind_masked, cv2.COLOR_BGR2GRAY)
         ret, ind_masked_thresh = cv2.threshold(ind_masked_gray, indicator_threshold, 255, cv2.THRESH_BINARY)
