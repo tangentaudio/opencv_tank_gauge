@@ -1,0 +1,13 @@
+[Unit]
+Description=Tank Gauge Monitor
+After=network.target
+Requires=redis
+
+[Service]
+Type=oneshot
+# Execute a dummy program
+ExecStart=/bin/true
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

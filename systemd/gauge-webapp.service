@@ -1,7 +1,7 @@
 [Unit]
-Description=OpenCV Tank Gauge Web Server
-After=network.target
-StartLimitIntervalSec=0
+Description=Tank Gauge Web App
+PartOf=gauge.service
+After=gauge.service
 
 [Service]
 Type=simple
@@ -12,4 +12,4 @@ WorkingDirectory=/opt/opencv_tank_gauge
 ExecStart=/usr/local/bin/gunicorn --worker-class gevent --workers 1 --bind 0.0.0.0:8080 'wsgi:app'
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=gauge.service

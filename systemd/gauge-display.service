@@ -1,7 +1,7 @@
 [Unit]
-Description=OpenCV Tank Gauge Display Output
-After=network.target
-StartLimitIntervalSec=0
+Description=Tank Gauge NeoPixel Display Output (runs as root)
+PartOf=gauge.service
+After=gauge.service
 
 [Service]
 Type=simple
@@ -12,4 +12,4 @@ WorkingDirectory=/opt/opencv_tank_gauge/clients
 ExecStart=/usr/bin/python display.py
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=gauge.service

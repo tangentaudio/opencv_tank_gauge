@@ -1,7 +1,7 @@
 [Unit]
-Description=OpenCV Tank Gauge Home Assistant Updater
-After=network.target
-StartLimitIntervalSec=0
+Description=Tank Gauge Home Assistant Interface
+PartOf=gauge.service
+After=gauge.service
 
 [Service]
 Type=simple
@@ -12,4 +12,4 @@ WorkingDirectory=/opt/opencv_tank_gauge/clients
 ExecStart=/usr/bin/python hass.py
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=gauge.service
