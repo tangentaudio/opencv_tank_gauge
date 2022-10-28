@@ -4,26 +4,27 @@ body {
 }
 
 .image {
-    padding: 10px;
 }
 
-.related-config-container {
-    border-top: 1px solid black;
-    background: #444444;
-    padding: 10px;
-    margins: 2px;
+.container {
+    max-width: 90%;
 }
-.slider-container {
+
+.ui-controlgroup-vertical {
+    background: #333333;
+    padding: 5px;
+}
+
+.control-container {
     font-weight: bold;
     font: 12px Arial, Helvetica, sans-serif;
     padding: 2px;
     display: flex;
 }
 
-.slider-label {
+.control-label {
     width: 150px;
+    text-align: right;
+    margin-right: 10px;
 }
 
-.slider {
-    width: 100%;
-}

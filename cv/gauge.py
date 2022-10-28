@@ -20,6 +20,7 @@ class GaugeCV:
          'slice_x1',
          'slice_x2',
          'tick_threshold',
+         'indicator_threshold',
          'level_average_points',
          'level_max_deviation']
 
@@ -49,14 +50,24 @@ class GaugeCV:
         self.running = False
         
     def thread_func(self):
+        have_config = False
+        
         with PiCamera() as self.camera:
             self.camera.resolution = (800,608)
             with PiRGBArray(self.camera, size=(800, 608)) as self.cam_buf:
+                if not self.get_config():
+                    print("Config not available yet.")
+                else:
+                    have_config = True
+                    
                 while self.running:
                     if self.get_config():
+                        if not have_config:
+                            have_config = True
+                            print("Got config from redis.")
+                            
                         self.process_image()
                     else:
-                        print("Incomplete config")
                         time.sleep(1)
                         
     def get_config(self):
@@ -155,7 +166,7 @@ class GaugeCV:
             pi = 0
             font = cv2.FONT_HERSHEY_SIMPLEX
             for pv in l:
-                preview = cv2.putText(preview, "{:02d}: {:.1f}".format(pi, pv), (x, y + (pi+1) * 16), font, 0.5, color, 1, cv2.LINE_AA)
+                preview = cv2.putText(preview, "{:02d}: {:.2f}".format(pi, pv), (x, y + (pi+1) * 16), font, 0.5, color, 1, cv2.LINE_AA)
                 pi = pi + 1
         
         return preview
@@ -165,10 +176,10 @@ class GaugeCV:
         y = 0
         if preview is not None:
             font = cv2.FONT_HERSHEY_SIMPLEX
-            preview = cv2.putText(preview, "MEAN: {:.1f}".format(mean), (x, y + 16), font, 0.5, (128,0,0), 1, cv2.LINE_AA)
-            preview = cv2.putText(preview, "STD DEV: {:.1f}".format(std_dev), (x, y + 32), font, 0.5, (128,0,0), 1, cv2.LINE_AA)
+            preview = cv2.putText(preview, "MEAN: {:.2f}".format(mean), (x, y + 16), font, 0.5, (128,0,0), 1, cv2.LINE_AA)
+            preview = cv2.putText(preview, "STD DEV: {:.2f}".format(std_dev), (x, y + 32), font, 0.5, (128,0,0), 1, cv2.LINE_AA)
 
-            preview = cv2.putText(preview, "AVG: {:.1f}".format(mean_clean), (x, y + 48), font, 0.5, (0,0,128), 1, cv2.LINE_AA)
+            preview = cv2.putText(preview, "AVG: {:.2f}".format(mean_clean), (x, y + 48), font, 0.5, (0,0,128), 1, cv2.LINE_AA)
         return preview
     
     def average_level(self, level, preview):
@@ -219,7 +230,8 @@ class GaugeCV:
         slice_x2 = self.config_int('slice_x2')
         rotate_angle = self.config['rotate_angle']
         tick_threshold = self.config['tick_threshold']
-
+        indicator_threshold = self.config['indicator_threshold']
+        
         # capture a frame from the camera
         self.cam_buf.truncate(0)
         self.camera.capture(self.cam_buf, format="bgr")
@@ -263,7 +275,7 @@ class GaugeCV:
         ind_masked = cv2.blur(ind_masked, (4,4), cv2.BORDER_DEFAULT)
 
         ind_masked_gray = cv2.cvtColor(ind_masked, cv2.COLOR_BGR2GRAY)
-        ret, ind_masked_thresh = cv2.threshold(ind_masked_gray, 50, 255, cv2.THRESH_BINARY)
+        ret, ind_masked_thresh = cv2.threshold(ind_masked_gray, indicator_threshold, 255, cv2.THRESH_BINARY)
 
         # copy the indicator threshold image onto the preview
         prev_ind_thresh = cv2.cvtColor(ind_masked_thresh, cv2.COLOR_GRAY2BGR)

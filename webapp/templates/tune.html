@@ -11,65 +11,69 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }} ">
   <script src="https://code.jquery.com/jquery-3.6.0.js"></script>
   <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.js"></script>
-      
+  <script src="jquery.colorpicker.js"></script>
+  
   <title>OpenCV Tank Gauge</title>
 </head>
 <body>
   <div class="container">
-    <div class="row">
-      <div class="col-lg-8  offset-lg-2">
-	<h3 class="mt-5">Tank Gauge</h3>
-	<img src="{{ url_for('video_feed') }}" width="100%" class="image">
+    <div class="col-lg-8  offset-lg-2">
+      <img src="{{ url_for('video_feed') }}" width="100%" class="image">
+    </div>
+  </div>
+  <div class="container">
+    <div class="col-lg-8  offset-lg-2">
+      <div class="controlgroup-vertical">
+	<div class="control-container"><div class="control-label">Rotate Angle</div><input id="rotate_angle" class="spinner"></div>
+
+	<div class="control-container"><div class="control-label">Indicator Crop X1</div><input id="crop_x1" class="spinner"></div>
+	<div class="control-container"><div class="control-label">Indicator Crop Y1</div><input id="crop_y1" class="spinner"></div>
+
+	<div class="control-container"><div class="control-label">Indicator Crop X2</div><input id="crop_x2" class="spinner"></div>
+	<div class="control-container"><div class="control-label">Indicator Crop Y2</div><input id="crop_y2" class="spinner"></div>
+
+	<div class="control-container"><div class="control-label">Scale Crop X1</div><input id="slice_x1" class="spinner"></div>
+	<div class="control-container"><div class="control-label">Scale Crop X2</div><input id="slice_x2" class="spinner"></div>
+
+	<div class="control-container"><div class="control-label">Indicator Threshold Level</div><input id="indicator_threshold" class="spinner"></div>
+
+	<div class="control-container"><div class="control-label">Scale Threshold Level</div><input id="tick_threshold" class="spinner"></div>
+
+	<div class="control-container"><div class="control-label">Average Window Size</div><input id="level_average_points" class="spinner"></div>
+	<div class="control-container"><div class="control-label">Level Max Deviation</div><input id="level_max_deviation" class="spinner"></div>
       </div>
     </div>
-    
-    <div class="related-config-container">
-      <div class="slider-container"><div class="slider-label">Rotate Angle</div><div id="rotate_angle" class="slider"></div></div>
-    </div>
-    
-    <div class="related-config-container">
-      <div class="slider-container"><div class="slider-label">Upper Left Crop X</div><div id="crop_x1" class="slider"></div></div>
-      <div class="slider-container"><div class="slider-label">Upper Left Crop Y</div><div id="crop_y1" class="slider"></div></div>
-    </div>
 
-    <div class="related-config-container">
-      <div class="slider-container"><div class="slider-label">Lower Right Crop X</div><div id="crop_x2" class="slider"></div></div>
-      <div class="slider-container"><div class="slider-label">Lower Right Crop Y</div><div id="crop_y2" class="slider"></div></div>
-    </div>
-
-    <div class="related-config-container">
-      <div class="slider-container"><div class="slider-label">Left Slice X</div><div id="slice_x1" class="slider"></div></div>
-      <div class="slider-container"><div class="slider-label">Right Slice X</div><div id="slice_x2" class="slider"></div></div>
-    </div>
-
-    <div class="related-config-container">
-      <div class="slider-container"><div class="slider-label">Tick Threshold</div><div id="tick_threshold" class="slider"></div></div>
-    </div>
-
-    <div class="related-config-container">
-      <div class="slider-container"><div class="slider-label">Level Average Points</div><div id="level_average_points" class="slider"></div></div>
-      <div class="slider-container"><div class="slider-label">Level Max Deviation</div><div id="level_max_deviation" class="slider"></div></div>
-    </div>
-</div>
+  </div>
 
   <script>
-    function setconfig(evt, ui, id) {
+    function set_config_value(evt, ui, id) {
+	var v = $("#" + id).val();
         $.getJSON('/api/set_config_value', {
 	    id: id,
-	    value: ui.value
+	    value: v
         });
     }
 
-    $("#rotate_angle").slider( {{ template_slider("rotate_angle", 0.1) |safe }} )
-    $("#crop_x1").slider( {{ template_slider("crop_x1") |safe }} )
-    $("#crop_y1").slider( {{ template_slider("crop_y1") |safe }} )
-    $("#crop_x2").slider( {{ template_slider("crop_x2") |safe }} )
-    $("#crop_y2").slider( {{ template_slider("crop_y2") |safe }} )
-    $("#slice_x1").slider( {{ template_slider("slice_x1") |safe }} )
-    $("#slice_x2").slider( {{ template_slider("slice_x2") |safe }} )
-    $("#tick_threshold").slider( {{ template_slider("tick_threshold") |safe }} )
-    $("#level_average_points").slider( {{ template_slider("level_average_points") |safe }} )
-    $("#level_max_deviation").slider( {{ template_slider("level_max_deviation", 0.1) |safe }} )
+    $( function() {
+	$( ".controlgroup" ).controlgroup()
+	$( ".controlgroup-vertical" ).controlgroup({
+	    "direction": "vertical"
+	});
+    } );
+    
+    $("#rotate_angle").{{ template_spinner("rotate_angle", step=0.1, fmt="n1") |safe }}
+    $("#crop_x1").{{ template_spinner("crop_x1") |safe }}
+    $("#crop_y1").{{ template_spinner("crop_y1") |safe }}
+    $("#crop_x2").{{ template_spinner("crop_x2") |safe }}
+    $("#crop_y2").{{ template_spinner("crop_y2") |safe }}
+    $("#slice_x1").{{ template_spinner("slice_x1") |safe }}
+    $("#slice_x2").{{ template_spinner("slice_x2") |safe }}
+    $("#tick_threshold").{{ template_spinner("tick_threshold") |safe }}
+    $("#indicator_threshold").{{ template_spinner("indicator_threshold") |safe }}
+    $("#level_average_points").{{ template_spinner("level_average_points") |safe }}
+    $("#level_max_deviation").{{ template_spinner("level_max_deviation", step=0.1, fmt="n1") |safe }}
+
   </script>
   
 

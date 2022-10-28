@@ -17,8 +17,8 @@ def init_app():
 
         from . import routes
 
-        app.jinja_env.globals.update(template_slider=routes.template_slider)
-        
+        app.jinja_env.globals.update(template_spinner=routes.template_spinner)
+        routes.copy_config_to_redis()
         
         return app
 

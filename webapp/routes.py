@@ -39,17 +39,15 @@ def copy_config_to_redis():
         set_redis_value('_config_' + row.key, row.value)
         
     
-def template_slider(id, step=1.0):
+def template_spinner(id, step=1.0, fmt='n'):
     cfg = get_config_val(id)
-    return '''{{
+    return '''spinner({{
     min: {min},
     max: {max},
-    value: {value},
     step: {step},
-    animate: "slow",
-    orientation: "horizontal",
-    change: function(event, ui) {{ setconfig(event, ui, "{id}") }}
-    }}'''.format(min=cfg.min, max=cfg.max, value=cfg.value, step=step, id=id)
+    numberFormat: "{fmt}",
+    stop: function(event, ui) {{ set_config_value(event, ui, "{id}") }}
+    }}).val({value})'''.format(min=cfg.min, max=cfg.max, value=cfg.value, step=step, fmt=fmt, id=id)
 
 
 def gen_frames():
@@ -79,11 +77,11 @@ def video_feed():
     return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/api/set_config_value')
-def set_config():
+def api_set_config_value():
     id = request.args.get('id')
     value = request.args.get('value')
+    print("{}={}".format(id,value))
     set_config_val(id, value)
-
     set_redis_value('_config_' + id, value)
         
     return value
