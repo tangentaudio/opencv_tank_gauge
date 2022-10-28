@@ -1,4 +1,4 @@
-<!doctype html>
+
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -54,7 +54,7 @@
 
   <script>
     function setconfig(evt, ui, id) {
-        $.getJSON('/setconfig', {
+        $.getJSON('/api/set_config_value', {
 	    id: id,
 	    value: ui.value
         });

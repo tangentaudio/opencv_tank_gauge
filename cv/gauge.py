@@ -35,6 +35,10 @@ class GaugeCV:
         self.preview = None
         self.avg = 0.0
         self.avg_update_time = None
+
+        self.mean = None
+        self.std_dev = None
+        self.no_outliers = None
         
         self.running = True
 
@@ -146,12 +150,40 @@ class GaugeCV:
       result = cv2.warpAffine(image, rot_mat, image.shape[1::-1], flags=cv2.INTER_LINEAR)
       return result
 
-    def average_level(self, level):
+    def preview_render_list(self, preview, l, x, y = 0, color=(0,0,0)):
+        if preview is not None:
+            pi = 0
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            for pv in l:
+                preview = cv2.putText(preview, "{:02d}: {:.1f}".format(pi, pv), (x, y + (pi+1) * 16), font, 0.5, color, 1, cv2.LINE_AA)
+                pi = pi + 1
+        
+        return preview
+
+    def preview_render_stats(self, preview, mean, std_dev, mean_clean):
+        x = 600
+        y = 0
+        if preview is not None:
+            font = cv2.FONT_HERSHEY_SIMPLEX
+            preview = cv2.putText(preview, "MEAN: {:.1f}".format(mean), (x, y + 16), font, 0.5, (128,0,0), 1, cv2.LINE_AA)
+            preview = cv2.putText(preview, "STD DEV: {:.1f}".format(std_dev), (x, y + 32), font, 0.5, (128,0,0), 1, cv2.LINE_AA)
+
+            preview = cv2.putText(preview, "AVG: {:.1f}".format(mean_clean), (x, y + 48), font, 0.5, (0,0,128), 1, cv2.LINE_AA)
+        return preview
+    
+    def average_level(self, level, preview):
         level_average_points = self.config_int('level_average_points')
         max_deviations = self.config['level_max_deviation']
         
         if len(self.level_avg_win) < level_average_points:
             self.level_avg_win.append(level)
+
+            preview = self.preview_render_list(preview, self.level_avg_win, 0)
+
+            if self.mean is not None and self.std_dev is not None and self.no_outliers is not None:
+                preview = self.preview_render_list(preview, self.no_outliers, 100, 0, (64,0,0))
+                preview = self.preview_render_stats(preview, self.mean, self.std_dev, self.avg)
+                
         else:
             avg_array = np.array(self.level_avg_win)
             mean = np.mean(avg_array)
@@ -161,13 +193,22 @@ class GaugeCV:
             not_outlier = distance_from_mean <= max_deviations * standard_deviation
             no_outliers = avg_array[not_outlier]
 
+            preview = self.preview_render_list(preview, self.level_avg_win, 0, 0)
+            preview = self.preview_render_list(preview, no_outliers, 100, 0, (64,0,0))
+            
             avg = np.mean(no_outliers)
 
+            preview = self.preview_render_stats(preview, mean, standard_deviation, avg)
+
+            self.mean = mean
+            self.std_dev = standard_deviation
+            self.no_outliers = no_outliers
+            
             self.level_avg_win = []
 
-            return avg
+            return avg, preview
 
-        return None
+        return None, preview
 
     def process_image(self):
         crop_x1 = self.config_int('crop_x1')
@@ -239,23 +280,31 @@ class GaugeCV:
 
         level, preview = self.interpolate(tick_contours, ind_contours, preview)
 
-        if preview is not None:
-            ret, buffer = cv2.imencode('.jpg', preview)
-            self.rd.set('encoded_preview', buffer.tobytes())
-            
         avg = None
         if level is not None:
-            avg = self.average_level(level)
+            avg, preview = self.average_level(level, preview)
             if avg is not None:
+                
                 now = str(datetime.now())
                 self.rd.set('avg_level', avg)
                 self.rd.set('avg_update_time', now)
 
                 self.rd.publish('avg_level', avg)
                 self.rd.publish('avg_update_time', now)
-                
-                return True
 
+                self.avg = avg
+                self.avg_update_time = now
+                
+        if preview is not None:
+            ret, buffer = cv2.imencode('.jpg', preview)
+            self.rd.set('encoded_preview', buffer.tobytes())
+            self.rd.publish('encoded_preview', 'updated')
+
+
+        if avg is not None:
+            self.rd.publish('encoded_preview', 'updated')            
+            return True
+        
         return False
 
     def close(self):

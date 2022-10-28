@@ -2,10 +2,8 @@
 
 from flask import Flask, render_template, jsonify, request, redirect, url_for, Response, g
 from flask import current_app as app
-from random import uniform
 from .models import db, Config
 import redis
-
 
 def set_redis_value(key, value):
     rd = redis.Redis(host='localhost', db=0)
@@ -56,16 +54,22 @@ def template_slider(id, step=1.0):
 
 def gen_frames():
     streaming = True
+    rd = redis.Redis(host='localhost', db=0)
+    sub = rd.pubsub()
+    sub.subscribe('encoded_preview')
+    
     while streaming:
         try:
-            frame = get_redis_value('encoded_preview')
+            for msg in sub.listen():
+                if msg['channel'].decode('utf-8') == 'encoded_preview':
+                    frame = rd.get('encoded_preview')
                 
-            if frame is not None:
-                yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-                
+                    if frame is not None:
+                        yield (b'--frame\r\n'
+                               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
         except GeneratorExit:
             streaming = False
+            
 
     print("Done streaming.")
 
@@ -74,8 +78,8 @@ def gen_frames():
 def video_feed():
     return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-@app.route('/setconfig')
-def slide():
+@app.route('/api/set_config_value')
+def set_config():
     id = request.args.get('id')
     value = request.args.get('value')
     set_config_val(id, value)
@@ -84,8 +88,8 @@ def slide():
         
     return value
 
-@app.route('/')
-def current_level():
+@app.route('/api/get_level')
+def api_get_level():
     avg = float(get_redis_value('avg_level').decode('utf-8'))
     update_time = get_redis_value('avg_update_time').decode('utf-8')
 
@@ -93,17 +97,14 @@ def current_level():
         return jsonify(level=round(avg, 1), update_time=update_time)
     
     return jsonify(error="No level reading available")
-
-@app.route('/random_test')
-def random_level():
-    time.sleep(4)
-    level=round(uniform(0.0, 100.0), 1)
-    print("Returning random level {l}".format(l=level))
-    return jsonify(level=level)
     
 @app.route('/tune')
-def index():
+def tune():
     return render_template('tune.html')
+
+@app.route('/')
+def preview():
+    return render_template('preview.html')
 
 
 if __name__ == '__main__':
