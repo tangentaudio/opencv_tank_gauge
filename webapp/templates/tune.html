@@ -14,39 +14,36 @@
   
   <title>OpenCV Tank Gauge</title>
 </head>
-<body>
-  <div class="container">
+<body class="body-tune">
+  <div class="container image">
+    <h3 class="title-header">OpenCV Tank Gauge Tuner</div>
     <div class="col-lg-8  offset-lg-2">
-      <img src="{{ url_for('video_feed') }}" width="100%" class="image">
+      <img src="{{ url_for('video_feed') }}" width="100%" class="image-tune">
     </div>
   </div>
-  <div class="container">
-    <div class="col-lg-8  offset-lg-2">
-      <div class="controlgroup-vertical">
-	<div class="control-container"><div class="control-label">Rotate Angle</div><input id="rotate_angle" class="spinner"></div>
-
-	<div class="control-container"><div class="control-label">Indicator Crop X1</div><input id="crop_x1" class="spinner"></div>
-	<div class="control-container"><div class="control-label">Indicator Crop Y1</div><input id="crop_y1" class="spinner"></div>
-
-	<div class="control-container"><div class="control-label">Indicator Crop X2</div><input id="crop_x2" class="spinner"></div>
-	<div class="control-container"><div class="control-label">Indicator Crop Y2</div><input id="crop_y2" class="spinner"></div>
-
-	<div class="control-container"><div class="control-label">Scale Crop X1</div><input id="slice_x1" class="spinner"></div>
-	<div class="control-container"><div class="control-label">Scale Crop X2</div><input id="slice_x2" class="spinner"></div>
-
-	<div class="control-container"><div class="control-label">Indicator Blur</div><input id="indicator_blur" class="spinner"></div>
-	<div class="control-container"><div class="control-label">Scale Blur</div><input id="tick_blur" class="spinner"></div>
-	
-	<div class="control-container"><div class="control-label">Indicator Threshold Level</div><input id="indicator_threshold" class="spinner"></div>
-
-	<div class="control-container"><div class="control-label">Scale Threshold Level</div><input id="tick_threshold" class="spinner"></div>
-
-	<div class="control-container"><div class="control-label">Average Window Size</div><input id="level_average_points" class="spinner"></div>
-	<div class="control-container"><div class="control-label">Level Max Deviation</div><input id="level_max_deviation" class="spinner"></div>
-      </div>
+  <div class="container container-flex">
+    <div class="controlgroup-vertical">
+      <div class="control-container"><div class="control-label">Rotate Angle</div><input id="rotate_angle" class="spinner"></div>
+      <div class="control-container"><div class="control-label">Average Window Size</div><input id="level_average_points" class="spinner"></div>
+      <div class="control-container"><div class="control-label">Level Max Deviation</div><input id="level_max_deviation" class="spinner"></div>
+    </div>
       
+    <div class="controlgroup-vertical">
+      <div class="control-container"><div class="control-label red">Indicator Crop X1</div><input id="crop_x1" class="spinner"></div>
+      <div class="control-container"><div class="control-label red">Indicator Crop Y1</div><input id="crop_y1" class="spinner"></div>
+      <div class="control-container"><div class="control-label red">Indicator Crop X2</div><input id="crop_x2" class="spinner"></div>
+      <div class="control-container"><div class="control-label red">Indicator Crop Y2</div><input id="crop_y2" class="spinner"></div>
+      <div class="control-container"><div class="control-label red">Indicator Blur</div><input id="indicator_blur" class="spinner"></div>
+      <div class="control-container"><div class="control-label red">Indicator Threshold Level</div><input id="indicator_threshold" class="spinner"></div>
     </div>
 
+    <div class="controlgroup-vertical">
+      <div class="control-container"><div class="control-label green">Scale Crop X1</div><input id="slice_x1" class="spinner"></div>
+      <div class="control-container"><div class="control-label green">Scale Crop X2</div><input id="slice_x2" class="spinner"></div>
+      <div class="control-container"><div class="control-label green">Scale Blur</div><input id="tick_blur" class="spinner"></div>
+      <div class="control-container"><div class="control-label green">Scale Threshold Level</div><input id="tick_threshold" class="spinner"></div>
+    </div>
+      
   </div>
 
   <script>
