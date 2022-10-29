@@ -6,8 +6,8 @@ from picamera.array import PiRGBArray
 import cv2
 import numpy as np
 from datetime import datetime
-from threading import Thread
 import time
+from rich.progress import Progress
 
 class GaugeCV:
 
@@ -42,35 +42,40 @@ class GaugeCV:
         self.mean = None
         self.std_dev = None
         self.no_outliers = None
-        
-        self.running = True
 
-        t = Thread(target=self.thread_func)
-        t.start()
-
-    def stop(self):
-        self.running = False
-        
-    def thread_func(self):
-        have_config = False
-        
-        with PiCamera() as self.camera:
-            self.camera.resolution = (800,608)
-            with PiRGBArray(self.camera, size=(800, 608)) as self.cam_buf:
-                if not self.get_config():
-                    print("Config not available yet.")
-                else:
-                    have_config = True
-                    
-                while self.running:
-                    if self.get_config():
-                        if not have_config:
-                            have_config = True
-                            print("Got config from redis.")
-                            
-                        self.process_image()
-                    else:
+    def run(self):
+       
+        with Progress() as progress:
+            with PiCamera() as self.camera:
+                self.camera.resolution = (800,608)
+                with PiRGBArray(self.camera, size=(800, 608)) as self.cam_buf:
+                    t1 = progress.add_task("Get config from redis", total=None)
+                
+                    while not self.get_config():
                         time.sleep(1)
+
+                    progress.remove_task(t1)
+                    progress.console.print("Got config from redis.")
+
+                    last_frames = 0
+                    t2 = progress.add_task("Processing image frames", total=None)
+
+                    while True:
+                        if not self.get_config():
+                            progress.console.print("Can't get config from redis.  Quitting.")
+                            exit
+
+                        num_frames = int(self.config['level_average_points'])
+
+                        if last_frames != num_frames:
+                            progress.reset(t2, total=num_frames)
+                            last_frames = num_frames
+                        
+                        if self.process_image():
+                            progress.console.print(f"Average level {round(self.avg, 2)}%")
+                            progress.reset(t2, total=num_frames)
+
+                        progress.advance(t2)
                         
     def get_config(self):
         have_keys = []
@@ -148,7 +153,7 @@ class GaugeCV:
             level = np.interp([indicator_yval], tick_yvals, tick_fp)[0]
 
             image=cv2.rectangle(image,(crop_x1-legend_w,indicator_yval+crop_y1),(crop_x2,indicator_yval + crop_y1),(0,0,255),3)
-            image=cv2.putText(image, "{:.1f}%".format(level), (crop_x1-legend_w-100,indicator_yval+crop_y1+10), font, 1.0, (0,0,255), 2, cv2.LINE_AA) 
+            image=cv2.putText(image, "{:.2f}%".format(level), (crop_x1-legend_w-100,indicator_yval+crop_y1+10), font, 1.0, (0,0,255), 2, cv2.LINE_AA) 
 
             now = datetime.now()
             dt_string = now.strftime("%m/%d/%Y %H:%M:%S")        
@@ -327,9 +332,7 @@ class GaugeCV:
         if self.camera is not None:
             self.camera.close()
 
-
-
 if __name__ == '__main__':
     cv = GaugeCV()
-    while True:
-        time.sleep(1)
+    cv.run()
+    
