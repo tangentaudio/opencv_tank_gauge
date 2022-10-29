@@ -1,5 +1,7 @@
 # OpenCV Oil Tank Gauge Reader
 
+![Tank Gauge Reader](https://user-images.githubusercontent.com/3910098/198847533-4a220e9f-59e9-44fc-b9a3-c617c91fe058.png)
+
 ## Features
 - Raspberry Pi Zero W with Official Raspberry Pi Camera 2
 - Single 5V power input via MicroUSB
