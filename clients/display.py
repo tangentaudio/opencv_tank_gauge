@@ -185,6 +185,6 @@ if __name__ == '__main__':
                     if d == 'reboot':
                         os.system('/usr/sbin/reboot')
                     else:
-                        os.system('/usb/sbin/poweroff')
+                        os.system('/usr/sbin/poweroff -f')
                         
 
