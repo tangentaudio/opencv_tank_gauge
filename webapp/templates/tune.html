@@ -43,7 +43,12 @@
       <div class="control-container"><div class="control-label green">Scale Blur</div><input id="tick_blur" class="spinner"></div>
       <div class="control-container"><div class="control-label green">Scale Threshold Level</div><input id="tick_threshold" class="spinner"></div>
     </div>
-      
+   
+  </div>
+
+  <div class="container container-flex">
+    <input id="button-shutdown" class="ui-button ui-widget ui-corner-all" type="submit" value="Shutdown">
+    <input id="button-reboot" class="ui-button ui-widget ui-corner-all" type="submit" value="Reboot">
   </div>
 
   <script>
@@ -76,6 +81,19 @@
     $("#level_average_points").{{ template_spinner("level_average_points") |safe }}
     $("#level_max_deviation").{{ template_spinner("level_max_deviation", step=0.1, fmt="n1") |safe }}
 
+    $( function() {
+	$( ".widget input[type=submit], .widget a, .widget button" ).button();
+	$( "button, input, a" ).on( "click", function( event ) {
+	    event.preventDefault();
+	    var id = event.currentTarget.id;
+	    if (id == "button-shutdown") {
+		$.getJSON('/api/shutdown', {type: "halt"});
+	    } else if (id == "button-reboot") {
+		$.getJSON('/api/shutdown', {type: "reboot"});
+	    }	
+	} );
+    } );
+    
   </script>
   
 

@@ -95,7 +95,20 @@ def api_get_level():
         return jsonify(level=round(avg, 1), update_time=update_time)
     
     return jsonify(error="No level reading available")
-    
+
+@app.route('/api/shutdown')
+def api_shutdown():
+    rd = redis.Redis(host='localhost', db=0)
+
+    type = request.args.get('type')
+    if type == 'reboot':
+        rd.publish('shutdown', 'reboot')
+    else:
+        rd.publish('shutdown', 'halt')
+
+    return jsonify(type=type)
+
+
 @app.route('/tune')
 def tune():
     return render_template('tune.html')

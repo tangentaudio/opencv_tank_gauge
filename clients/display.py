@@ -7,6 +7,7 @@ import neopixel
 from threading import Thread,Lock
 from enum import Enum
 import redis
+import os
 
 class States(Enum):
     INIT = 1
@@ -153,7 +154,7 @@ if __name__ == '__main__':
     rd = redis.Redis(host='localhost', port=6379, db=0, charset='utf-8', decode_responses=True)
     sub = rd.pubsub()
     
-    sub.subscribe('avg_level', 'avg_update_time')
+    sub.subscribe('avg_level', 'avg_update_time', 'shutdown')
     while True:
         for msg in sub.listen():
             if msg['type'] == 'message':
@@ -172,4 +173,10 @@ if __name__ == '__main__':
 
                     else:
                         gauge.set_state(States.ERROR)
+                elif c == 'shutdown':
+                    if d == 'reboot':
+                        os.system('/usr/sbin/reboot')
+                    else:
+                        os.system('/usb/sbin/poweroff')
+                        
 
