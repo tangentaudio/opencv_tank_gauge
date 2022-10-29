@@ -14,6 +14,7 @@ class States(Enum):
     ERROR = 2
     QUERY = 3
     LEVEL = 4
+    SHUTDOWN = 5
 
 class GaugePixels:
     def __init__(self):
@@ -120,7 +121,12 @@ class GaugePixels:
                     if warn:
                         phase = 10
                     
-                    
+            elif state == States.SHUTDOWN:
+                if phase == 0:
+                    self.pixels.fill((0,0,0))
+                    self.pixels[0] = (255, 255, 255)
+                    self.pixels.show()
+                        
             else:
                 pass
 
@@ -174,6 +180,8 @@ if __name__ == '__main__':
                     else:
                         gauge.set_state(States.ERROR)
                 elif c == 'shutdown':
+                    gauge.set_state(States.SHUTDOWN)
+                    time.sleep(1)
                     if d == 'reboot':
                         os.system('/usr/sbin/reboot')
                     else:
