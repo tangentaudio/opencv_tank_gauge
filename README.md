@@ -11,6 +11,10 @@
 - Home Assistant API integration
 - REST API
 
+## Documentation
+
+Full assembly and software installation instructions are located on [Project Wiki](https://github.com/tangentaudio/opencv_tank_gauge/wiki)
+
 ## 3D Printed Enclosure
 ![Enclosure](mechanical/enclosure.png)
 
