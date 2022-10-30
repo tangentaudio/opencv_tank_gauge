@@ -8,7 +8,7 @@ Type=simple
 Restart=always
 RestartSec=2
 User=gauge
-WorkingDirectory=/opt/opencv_tank_gauge/clients
+WorkingDirectory=/home/gauge/opencv_tank_gauge/clients
 ExecStart=/usr/bin/python hass.py
 
 [Install]
