@@ -17,7 +17,7 @@ class Config:
     TEMPLATES_AUTO_RELOAD = True
     
     # Database
-    SQLALCHEMY_DATABASE_URI = 'sqlite:////opt/opencv_tank_gauge/db/gauge.db'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:////home/gauge/opencv_tank_gauge/db/gauge.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     
