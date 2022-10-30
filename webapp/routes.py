@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 from flask import Flask, render_template, jsonify, request, redirect, url_for, Response, g
 from flask import current_app as app
 from .models import db, Config

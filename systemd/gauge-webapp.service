@@ -9,7 +9,7 @@ Restart=always
 RestartSec=2
 User=gauge
 WorkingDirectory=/home/gauge/opencv_tank_gauge
-ExecStart=/usr/local/bin/gunicorn --worker-class gevent --workers 1 --bind 0.0.0.0:8080 'wsgi:app'
+ExecStart=/home/gauge/.venv/bin/gunicorn --worker-class gevent --workers 1 --bind 0.0.0.0:8080 'wsgi:app'
 
 [Install]
 WantedBy=gauge.service

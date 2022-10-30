@@ -9,7 +9,7 @@ Restart=always
 RestartSec=2
 User=gauge
 WorkingDirectory=/home/gauge/opencv_tank_gauge/cv
-ExecStart=/usr/bin/python gauge.py
+ExecStart=/home/gauge/.venv/bin/python gauge.py
 
 [Install]
 WantedBy=gauge.service

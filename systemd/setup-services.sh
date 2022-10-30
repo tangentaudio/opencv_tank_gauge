@@ -23,6 +23,7 @@ if [ "$CMD" = "install" ]; then
     systemctl enable gauge-hass
     echo "Services installed and enabled.  To start services, you can run:"
     echo "sudo systemctl start gauge"
+    exit 1
 fi
 
 if [ "$CMD" = "remove" ]; then
