@@ -15,9 +15,16 @@
 
 ## Documentation
 
-Full assembly and software installation instructions are located on [Project Wiki](https://github.com/tangentaudio/opencv_tank_gauge/wiki)
+Full instructions are located on [Project Wiki](https://github.com/tangentaudio/opencv_tank_gauge/wiki)
+
+## Software Quick Start
+
+Advanced users can skip straight to the installer script, which installs all pre-requisites and configures system services.  Find it at `install.sh` in the project root directory.  This is best done on a fresh Raspberry Pi OS Lite 32-bit installation. [Full installation instructions](https://github.com/tangentaudio/opencv_tank_gauge/wiki/Software-Installation) are on the wiki.
 
 ## 3D Printed Enclosure
+
+A custom 3D printed enclosure holds all of the parts.  Jump over to the [Mechanical Assembly](https://github.com/tangentaudio/opencv_tank_gauge/wiki/Mechanical-Assembly) section of the wiki to read how to print and build it.
+
 ![Enclosure](mechanical/enclosure.png)
 
 ## Browser-Based Parameter Tuning and Config
