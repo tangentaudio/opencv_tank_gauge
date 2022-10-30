@@ -15,7 +15,7 @@
 
 ## Documentation
 
-Full mechanical assembly, electronics assembly, and software installation instructions are located on [Project Wiki](https://github.com/tangentaudio/opencv_tank_gauge/wiki)
+Full mechanical assembly, electronics assembly, and software installation instructions are located on the [Project Wiki](https://github.com/tangentaudio/opencv_tank_gauge/wiki)
 
 ## Software Quick Start
 
