@@ -1,6 +1,6 @@
 # OpenCV Oil Tank Gauge Reader
 
-![Tank Gauge Reader](https://user-images.githubusercontent.com/3910098/198847533-4a220e9f-59e9-44fc-b9a3-c617c91fe058.png)
+![Tank Gauge Reader](https://user-images.githubusercontent.com/3910098/198852891-0fbadb3a-7941-4940-a51e-f092b6933b7c.png)
 
 ## Features
 - Raspberry Pi Zero W with Official Raspberry Pi Camera 2
@@ -15,18 +15,9 @@
 
 ## Documentation
 
-Full instructions are located on [Project Wiki](https://github.com/tangentaudio/opencv_tank_gauge/wiki)
+Full mechanical assembly, electronics assembly, and software installation instructions are located on the [Project Wiki](https://github.com/tangentaudio/opencv_tank_gauge/wiki)
 
 ## Software Quick Start
 
 Advanced users can skip straight to the installer script, which installs all pre-requisites and configures system services.  Find it at `install.sh` in the project root directory.  This is best done on a fresh Raspberry Pi OS Lite 32-bit installation. [Full installation instructions](https://github.com/tangentaudio/opencv_tank_gauge/wiki/Software-Installation) are on the wiki.
-
-## 3D Printed Enclosure
-
-A custom 3D printed enclosure holds all of the parts.  Jump over to the [Mechanical Assembly](https://github.com/tangentaudio/opencv_tank_gauge/wiki/Mechanical-Assembly) section of the wiki to read how to print and build it.
-
-![Enclosure](mechanical/enclosure.png)
-
-## Browser-Based Parameter Tuning and Config
-![OpenCV Gauge Reader Tuner](doc/tuner.png)
 

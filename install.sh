@@ -50,8 +50,7 @@ configure_python()
     echo -n "Activating venv..."
     . ~/.venv/bin/activate
     echo "Done."
-/home/gauge/.venv/bin/gunicorn --worker-class gevent --workers 1 --bind 0.0.0.0:8080 'wsg\
-i:app'
+    
     echo "Installing modules..."
     python -m pip install redis
     python -m pip install picamera
