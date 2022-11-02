@@ -1,7 +1,13 @@
 from flask import Flask, render_template, jsonify, request, redirect, url_for, Response, g
 from flask import current_app as app
-from .models import db, Config
+from flask_httpauth import HTTPBasicAuth, HTTPTokenAuth, MultiAuth
+from werkzeug.security import generate_password_hash, check_password_hash
+from .models import db, Config, Users
 import redis
+
+basic_auth = HTTPBasicAuth()
+token_auth = HTTPTokenAuth('Bearer')
+multi_auth = MultiAuth(basic_auth, token_auth)
 
 def set_redis_value(key, value):
     rd = redis.Redis(host='localhost', db=0)
@@ -36,7 +42,17 @@ def copy_config_to_redis():
     for row in rows:
         set_redis_value('_config_' + row.key, row.value)
         
-    
+@basic_auth.verify_password
+def verify_password(username, password):
+    u = Users.query.filter(Users.user == username).first()
+
+    if u is not None and u.user == username and check_password_hash(u.hash, password):
+        return username
+
+@token_auth.verify_token
+def verify_token(token):
+    pass
+        
 def template_spinner(id, step=1.0, fmt='n'):
     cfg = get_config_val(id)
     return '''spinner({{
@@ -65,16 +81,18 @@ def gen_frames():
                                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
         except GeneratorExit:
             streaming = False
-            
+           
 
     print("Done streaming.")
 
     
 @app.route('/video_feed')
+@multi_auth.login_required
 def video_feed():
     return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/api/set_config_value')
+@multi_auth.login_required
 def api_set_config_value():
     id = request.args.get('id')
     value = request.args.get('value')
@@ -85,6 +103,7 @@ def api_set_config_value():
     return value
 
 @app.route('/api/get_level')
+@multi_auth.login_required
 def api_get_level():
     avg = float(get_redis_value('avg_level').decode('utf-8'))
     update_time = get_redis_value('avg_update_time').decode('utf-8')
@@ -95,6 +114,7 @@ def api_get_level():
     return jsonify(error="No level reading available")
 
 @app.route('/api/shutdown')
+@multi_auth.login_required
 def api_shutdown():
     rd = redis.Redis(host='localhost', db=0)
 
@@ -108,10 +128,12 @@ def api_shutdown():
 
 
 @app.route('/tune')
+@multi_auth.login_required
 def tune():
     return render_template('tune.html')
 
 @app.route('/')
+@multi_auth.login_required
 def preview():
     return render_template('preview.html')
 

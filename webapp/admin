@@ -1,0 +1,5 @@
+#!/bin/sh
+SCRIPT_PATH=$(realpath $0)
+SCRIPT_DIR=$(dirname $SCRIPT_PATH)
+~/.venv/bin/python ${SCRIPT_DIR}/admin.py --database ${SCRIPT_DIR}/../db/gauge.db
+

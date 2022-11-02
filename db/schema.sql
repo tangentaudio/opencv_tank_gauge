@@ -1,8 +1,14 @@
 CREATE TABLE config (
        key TEXT PRIMARY KEY,
        min REAL NOT NULL,
-       max REAL not NULL,
+       max REAL NOT NULL,
        value REAL NOT NULL
+);
+
+CREATE TABLE users (
+       user TEXT PRIMARY KEY,
+       hash TEXT NOT NULL,
+       role TEXT NOT NULL
 );
 
 INSERT INTO config (key, min, max, value)

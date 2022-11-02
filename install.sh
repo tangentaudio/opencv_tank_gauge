@@ -60,6 +60,7 @@ i:app'
     python -m pip install Flask
     python -m pip install Flask-SQLAlchemy
     python -m pip install flask-redis
+    python -m pip install Flask-HTTPAuth
     python -m pip install gunicorn
     python -m pip install gevent
     python -m pip install homeassistant-api
@@ -76,6 +77,17 @@ setup_services()
     cd $SCRIPT_DIR/systemd
     sudo ./setup-services.sh remove
     sudo ./setup-services.sh install
+}
+
+setup_webapp()
+{
+    echo
+    echo "The web app requires at least one account to be created."
+    echo "Please set up an account now."
+    echo
+    
+    cd $SCRIPT_DIR/webapp
+    ./admin
 }
 
 setup_hass()
@@ -122,7 +134,9 @@ setup_hass()
 install_db
 configure_python
 setup_services
+setup_webapp
 setup_hass
+
 
 echo
 echo "Installation complete."
