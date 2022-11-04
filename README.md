@@ -1,6 +1,6 @@
 # OpenCV Oil Tank Gauge Reader
 
-![Tank Gauge Reader](https://user-images.githubusercontent.com/3910098/198852891-0fbadb3a-7941-4940-a51e-f092b6933b7c.png)
+![OpenCV Oil Tank Gauge Reader](https://user-images.githubusercontent.com/3910098/200051994-67c5f417-292a-4f02-be4b-0b632af075ec.png)
 
 ## Features
 - Raspberry Pi Zero W with Official Raspberry Pi Camera 2
